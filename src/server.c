@@ -55,3 +55,17 @@ int create_server_TCP(int port){
     return sockTCP;
 }
 
+int accept_client(int sockTCP){
+
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    int ca = accept(sockTCP, (struct sockaddr *)&client_addr, &client_len);
+
+    if(ca < 0){
+        perror("ERROR en accept");
+        return -1;
+    }
+
+    return ca;
+}
+
