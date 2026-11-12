@@ -9,7 +9,6 @@
 #include "files.h"
 #include "mime.h"
 
-
 #define MAX_EVENTS  128
 
 int main(int argc, char *argv[]){ 
@@ -36,8 +35,8 @@ int port, sockTCP;
             exit(1);
         }
 
-        struct epoll_event ev = {0};
         struct epoll_event events[MAX_EVENTS];
+        struct epoll_event ev = {0};                    
         ev.events = EPOLLIN;
         ev.data.fd = sockTCP;
 
@@ -60,29 +59,62 @@ int port, sockTCP;
             perror("epoll_wait");
             exit(1);
         }
+
       for (int i = 0; i < n; i++) {
             if (events[i].data.fd == sockTCP) {
                 int client_sock = accept_client(sockTCP);
-                if (client_sock >= 0) {
-                    //Funcion para soliticar y enviar archivos al cliente
-                    close(client_sock);
+
+                if (client_sock < 0) {
+                    fprintf(stderr, "Error aceptando cliente\n");
+                    continue;
                 }
+                    
+                    struct epoll_event client_ev = {0};
+                    client_ev.events = EPOLLIN;
+                    client_ev.data.fd = client_sock;
+                    
+                    
+                if (epoll_ctl(epct, EPOLL_CTL_ADD, client_sock, &client_ev) < 0) {
+                perror("Error registrando cliente");
+                close(client_sock);
+                }
+
+            } else {
+                int client_sock = events[i].data.fd;
+                char buffer[1024];
+                ssize_t lectura = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+
+                if (lectura < 0) {
+                    perror("Error leyendo del cliente");
+                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
+                    close(client_sock);
+                    continue;
+                }
+
+                if (lectura == 0) {
+                    // El cliente cerró la conexión
+                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
+                    printf("Cliente desconectado\n");
+                    close(client_sock);
+                    continue;
+                }
+
+                if (lectura > 0) {
+                    buffer[lectura] = '\0'; // Null-terminate the buffer
+                    printf("Datos recibidos del cliente:\n%s\n", buffer);
+                    // Procesar la solicitud HTTP y enviar la respuesta
+                    // process_http_request(client_sock, buffer);
+                    continue;
+                }
+              
+
             }
+
+
         }
     
 
-
-
-
     }
     
-
-
     close(sockTCP);
-
-
-
-
-
-
 }
