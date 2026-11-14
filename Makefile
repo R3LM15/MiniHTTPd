@@ -8,8 +8,8 @@ INCLUDES = -Iinclude
 TARGET = minihttpd
 
 # Archivos fuente
-SRC = src/main.c src/server.c
-INCLUDE = include/server.h
+SRC = src/main.c src/server.c src/http.c
+
 
 # Regla principal
 all:

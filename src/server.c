@@ -55,14 +55,20 @@ int create_server_TCP(int port){
     return sockTCP;
 }
 
-int accept_client(int sockTCP){
+int accept_client(int sockTCP, char *ip, size_t ip_size){
 
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
-    int ca = accept(sockTCP, (struct sockaddr *)&client_addr, &client_len);
+    int ca = accept(sockTCP, (struct sockaddr *)&client_addr, &client_len); //Aceptar una conexión entrante de un cliente
 
     if(ca < 0){
         perror("ERROR en accept");
+        return -1;
+    }
+
+    if(inet_ntop(AF_INET, &(client_addr.sin_addr), ip, ip_size) == NULL){ //Almacenar la dirección IP del cliente en formato legible en la variable buffer
+        perror("ERROR en inet_ntop");
+        close(ca);
         return -1;
     }
 

@@ -52,8 +52,8 @@ int port, sockTCP;
 
     while (1) {
         
-
-      int n = epoll_wait(epct, events, MAX_EVENTS, -1); //esperar eventos en los sockets registrados en la instancia de epoll
+    char ip[16];  //almacenar la dirección IP del cliente
+    int n = epoll_wait(epct, events, MAX_EVENTS, -1); //esperar eventos en los sockets registrados en la instancia de epoll
 
         if (n < 0) {
             perror("epoll_wait");
@@ -62,7 +62,7 @@ int port, sockTCP;
 
       for (int i = 0; i < n; i++) {
             if (events[i].data.fd == sockTCP) {
-                int client_sock = accept_client(sockTCP);
+                int client_sock = accept_client(sockTCP, ip, sizeof(ip));
 
                 if (client_sock < 0) {
                     fprintf(stderr, "Error aceptando cliente\n");
@@ -83,6 +83,7 @@ int port, sockTCP;
                 int client_sock = events[i].data.fd;
                 char buffer[1024];
                 ssize_t lectura = recv(client_sock, buffer, sizeof(buffer) - 1, 0);
+                
 
                 if (lectura < 0) {
                     perror("Error leyendo del cliente");
@@ -94,16 +95,15 @@ int port, sockTCP;
                 if (lectura == 0) {
                     // El cliente cerró la conexión
                     epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
-                    printf("Cliente desconectado\n");
+                    printf("-->  Cliente desconectado: %s\n", ip);
                     close(client_sock);
                     continue;
                 }
 
                 if (lectura > 0) {
                     buffer[lectura] = '\0'; // Null-terminate the buffer
-                    printf("Datos recibidos del cliente:\n%s\n", buffer);
-                    // Procesar la solicitud HTTP y enviar la respuesta
-                    // process_http_request(client_sock, buffer);
+                    // Procesar la solicitud HTTP y enviar la respuesta + identificador de ip 
+                    https_request(client_sock, buffer, ip);
                     continue;
                 }
               
@@ -116,5 +116,4 @@ int port, sockTCP;
 
     }
     
-    close(sockTCP);
 }
