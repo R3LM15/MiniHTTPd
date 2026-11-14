@@ -55,8 +55,7 @@ int create_server_TCP(int port){
     return sockTCP;
 }
 
-int accept_client(int sockTCP, char *ip, size_t ip_size){
-
+int accept_client(int sockTCP){
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
     int ca = accept(sockTCP, (struct sockaddr *)&client_addr, &client_len); //Aceptar una conexión entrante de un cliente
@@ -66,12 +65,24 @@ int accept_client(int sockTCP, char *ip, size_t ip_size){
         return -1;
     }
 
-    if(inet_ntop(AF_INET, &(client_addr.sin_addr), ip, ip_size) == NULL){ //Almacenar la dirección IP del cliente en formato legible en la variable buffer
-        perror("ERROR en inet_ntop");
-        close(ca);
+    return ca;
+}
+
+int Obtener_ip(int sockTCP, char *ip, size_t ip_size) {
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+
+    if (getpeername(sockTCP, (struct sockaddr *)&addr, &addr_len) < 0) { //Obtener la dirección IP del socket del servidor
+        perror("ERROR en getsockname");
         return -1;
     }
 
-    return ca;
+    if (inet_ntop(AF_INET, &addr.sin_addr, ip, ip_size) == NULL) { //Convertir la dirección IP a una cadena legible
+        perror("ERROR en inet_ntop");
+        return -1;
+    }
+
+
+    return 0;
 }
 

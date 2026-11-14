@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "server.h"
 #include "http.h"
 #include "files.h"
@@ -52,7 +53,6 @@ int port, sockTCP;
 
     while (1) {
         
-    char ip[16];  //almacenar la dirección IP del cliente
     int n = epoll_wait(epct, events, MAX_EVENTS, -1); //esperar eventos en los sockets registrados en la instancia de epoll
 
         if (n < 0) {
@@ -62,7 +62,7 @@ int port, sockTCP;
 
       for (int i = 0; i < n; i++) {
             if (events[i].data.fd == sockTCP) {
-                int client_sock = accept_client(sockTCP, ip, sizeof(ip));
+                int client_sock = accept_client(sockTCP);
 
                 if (client_sock < 0) {
                     fprintf(stderr, "Error aceptando cliente\n");
@@ -94,8 +94,10 @@ int port, sockTCP;
 
                 if (lectura == 0) {
                     // El cliente cerró la conexión
-                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
+                    char ip[INET_ADDRSTRLEN];
+                    Obtener_ip(client_sock, ip, sizeof(ip)); //obtiene la ip del socket del cliente antes de cerrarlo
                     printf("-->  Cliente desconectado: %s\n", ip);
+                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
                     close(client_sock);
                     continue;
                 }
@@ -103,7 +105,7 @@ int port, sockTCP;
                 if (lectura > 0) {
                     buffer[lectura] = '\0'; // Null-terminate the buffer
                     // Procesar la solicitud HTTP y enviar la respuesta + identificador de ip 
-                    https_request(client_sock, buffer, ip);
+                    https_request(client_sock, buffer);
                     continue;
                 }
               
