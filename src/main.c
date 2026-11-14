@@ -56,7 +56,7 @@ int port, sockTCP;
     int n = epoll_wait(epct, events, MAX_EVENTS, -1); //esperar eventos en los sockets registrados en la instancia de epoll
 
         if (n < 0) {
-            perror("epoll_wait");
+            printf("Error en epoll_wait");
             exit(1);
         }
 
@@ -75,7 +75,7 @@ int port, sockTCP;
                     
                     
                 if (epoll_ctl(epct, EPOLL_CTL_ADD, client_sock, &client_ev) < 0) {
-                perror("Error registrando cliente");
+                printf("Error registrando cliente");
                 close(client_sock);
                 }
 
@@ -86,7 +86,7 @@ int port, sockTCP;
                 
 
                 if (lectura < 0) {
-                    perror("Error leyendo del cliente");
+                    printf("Error leyendo del cliente");
                     epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
                     close(client_sock);
                     continue;
