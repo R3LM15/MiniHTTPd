@@ -2,10 +2,10 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "server.h"
+#include "http.h"
 
 
-
-int https_request(int client_sock, char *buffer) {
+int http_request(int client_sock, char *buffer) {
     
         char method[16];
         char path[256];
@@ -56,12 +56,35 @@ int https_request(int client_sock, char *buffer) {
 
      if (strcmp(method, "GET") == 0) {
         // Procesar la solicitud GET
-        printf("Procesando solicitud GET para: %s\n", path);
+        http_response(client_sock); // Llamar a la función http_response para enviar la respuesta al cliente
     } else {
-        printf("Método 405 no permitido: %s\n", method);
+        printf("Conexion Rechaza%s\n", method);
     }
 
     printf("\n");
+
+    return 0;
+}
+
+int http_response(int client_sock) {
+    const char *body = "<h1>Hola mundo, soy mateo molina, si ves esto el servidor está funcionando correctamente</h1>";
+    char headers[256];
+
+    int body_len = strlen(body);
+
+    int header_len = snprintf(headers, sizeof(headers), //definir los encabezados HTTP de la respuesta
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        "Content-Length: %d\r\n"
+        "Connection: close\r\n"
+        "\r\n",
+        body_len);
+
+    if (send(client_sock, headers, header_len, 0) != header_len) // Enviar los encabezados HTTP al cliente
+        return -1;
+
+    if (send(client_sock, body, body_len, 0) != body_len) // Enviar el cuerpo de la respuesta al cliente
+        return -1;
 
     return 0;
 }

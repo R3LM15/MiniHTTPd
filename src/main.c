@@ -105,7 +105,7 @@ int port, sockTCP;
                 if (lectura > 0) {
                     buffer[lectura] = '\0'; // Null-terminate the buffer
                     // Procesar la solicitud HTTP y enviar la respuesta + identificador de ip 
-                    https_request(client_sock, buffer);
+                    http_request(client_sock, buffer);
                     continue;
                 }
               
