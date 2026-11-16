@@ -1,8 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "server.h"
 #include "http.h"
+#include "files.h"
+#include "mime.h"
 
 
 int http_request(int client_sock, char *buffer) {
@@ -56,9 +61,11 @@ int http_request(int client_sock, char *buffer) {
 
      if (strcmp(method, "GET") == 0) {
         // Procesar la solicitud GET
-        http_response(client_sock); // Llamar a la función http_response para enviar la respuesta al cliente
+        
+        http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
     } else {
         printf("Conexion Rechaza%s\n", method);
+        close(client_sock); // Cerrar el socket del cliente si el método no es GET
     }
 
     printf("\n");
@@ -66,25 +73,47 @@ int http_request(int client_sock, char *buffer) {
     return 0;
 }
 
-int http_response(int client_sock) {
-    const char *body = "<h1>Hola mundo, soy mateo molina, si ves esto el servidor está funcionando correctamente</h1>";
+int http_response(int client_sock, char *path) {
+    size_t body_len = 0;
+    unsigned char *body = get_file(path, &body_len); // Obtener el contenido del archivo
     char headers[256];
 
-    int body_len = strlen(body);
+    if (!body) {
+        // Archivo no encontrado
+        const char *not_found =
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: 22\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "<h1>404 Not Found</h1>";
+        send(client_sock, not_found, strlen(not_found), 0);
+        close(client_sock);
+        return -1;
+    }
 
-    int header_len = snprintf(headers, sizeof(headers), //definir los encabezados HTTP de la respuesta
+
+    printf("path: %s\n", path);
+    
+    int header_len = snprintf(headers, sizeof(headers),
         "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html; charset=utf-8\r\n"
-        "Content-Length: %d\r\n"
-        "Connection: close\r\n"
+        "Content-Type: %s\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: keep-alive\r\n"
         "\r\n",
+        get_mime(path),
         body_len);
 
-    if (send(client_sock, headers, header_len, 0) != header_len) // Enviar los encabezados HTTP al cliente
+        printf("PATH: %s\n", path);
+        printf("MIME: %s\n", get_mime(path));
+        printf("TAMAÑO: %zu\n", body_len);
+
+    if (send(client_sock, headers, header_len, 0) != header_len) 
         return -1;
 
-    if (send(client_sock, body, body_len, 0) != body_len) // Enviar el cuerpo de la respuesta al cliente
-        return -1;
+    if (send(client_sock, body, body_len, 0) != (ssize_t)body_len) // Enviar el cuerpo de la respuesta al cliente
+    return -1;
+    
 
     return 0;
 }
