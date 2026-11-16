@@ -61,11 +61,14 @@ int http_request(int client_sock, char *buffer) {
 
     if (strcmp(method, "GET") == 0) {
             // Procesar la solicitud GET
-            http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
+            int resultado = http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
+            if(resultado == -1){
+            return -1;
+            }
+
     } else {
             printf("Conexion Rechaza%s\n", method);
-
-            close(client_sock); // Cerrar el socket del cliente si el método no es GET
+            return -1; // Método no soportado, cerrar la conexión
     }
 
     printf("\n");

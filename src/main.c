@@ -105,18 +105,15 @@ int port, sockTCP;
                 if (lectura > 0) {
                     buffer[lectura] = '\0'; // Null-terminate the buffer
                     // Procesar la solicitud HTTP y enviar la respuesta + identificador de ip 
-                    http_request(client_sock, buffer);
+                    int resultado = http_request(client_sock, buffer);
+                    if (resultado == -1) {
+                        printf("--> Cerrando conexión | Socket: %d\n", client_sock);
+                        epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
+                        close(client_sock);
+                    }
                     continue;
                 }
 
-                int resultado = http_request(client_sock, buffer);
-
-                if (resultado == -1) {
-                    printf("--> Cerrando conexión | Socket: %d\n", client_sock);
-                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
-                    close(client_sock);
-                    continue;
-                }
 
             }
 
