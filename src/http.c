@@ -24,6 +24,7 @@ int http_request(int client_sock, char *buffer) {
     //printf("Datos recibidos: %s\n", buffer);
     if (cc != 3) {
         printf("Error en pedito HTTP \n");
+        close(client_sock);
     }else {
         printf("===========================\n");
         printf("Método: %s\n", method);   //"GET"
@@ -58,14 +59,13 @@ int http_request(int client_sock, char *buffer) {
     Obtener_ip(client_sock, ip, sizeof(ip)); // Obtener la dirección IP del cliente asociado al socket
     printf("Dirección IP del cliente: %s\n", ip);
 
-
-     if (strcmp(method, "GET") == 0) {
-        // Procesar la solicitud GET
-        
-        http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
+    if (strcmp(method, "GET") == 0) {
+            // Procesar la solicitud GET
+            http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
     } else {
-        printf("Conexion Rechaza%s\n", method);
-        close(client_sock); // Cerrar el socket del cliente si el método no es GET
+            printf("Conexion Rechaza%s\n", method);
+
+            close(client_sock); // Cerrar el socket del cliente si el método no es GET
     }
 
     printf("\n");
@@ -79,6 +79,7 @@ int http_response(int client_sock, char *path) {
     char headers[256];
 
     if (!body) {
+        printf("Archivo no encontrado: %s\n", path);
         // Archivo no encontrado
         const char *not_found =
             "HTTP/1.1 404 Not Found\r\n"
@@ -87,14 +88,12 @@ int http_response(int client_sock, char *path) {
             "Connection: close\r\n"
             "\r\n"
             "<h1>404 Not Found</h1>";
+
         send(client_sock, not_found, strlen(not_found), 0);
-        close(client_sock);
         return -1;
-    }
+    } 
 
 
-    printf("path: %s\n", path);
-    
     int header_len = snprintf(headers, sizeof(headers),
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: %s\r\n"
@@ -104,16 +103,14 @@ int http_response(int client_sock, char *path) {
         get_mime(path),
         body_len);
 
-        printf("PATH: %s\n", path);
-        printf("MIME: %s\n", get_mime(path));
-        printf("TAMAÑO: %zu\n", body_len);
+   
 
-    if (send(client_sock, headers, header_len, 0) != header_len) 
+        if (send(client_sock, headers, header_len, 0) != header_len) // Enviar los encabezados de la respuesta al cliente 
         return -1;
 
-    if (send(client_sock, body, body_len, 0) != (ssize_t)body_len) // Enviar el cuerpo de la respuesta al cliente
-    return -1;
+        if (send(client_sock, body, body_len, 0) != (ssize_t)body_len) // Enviar el cuerpo de la respuesta al cliente
+        return -1;
     
-
+    
     return 0;
 }

@@ -16,12 +16,17 @@ unsigned char *get_file(const char *path, size_t *file_size) {
     // Si piden "/", servimos www/index.html
     if (strcmp(path, "/") == 0) {
         strcpy(filepath, "www/index.html");
-    }
-    // Si piden "/style.css", servimos www/style.css
-    if (strncmp(path, "/style.css", 14) == 0) {
+    }else if (strcmp(path, "/style.css") == 0) {
         strcpy(filepath, "www/style.css");
-    }
+    }else if (strcmp(path, "/index.html") == 0) {
+        strcpy(filepath, "www/index.html");
+    }else{
+        return NULL; 
+    }   
 
+    // Si piden "/style.css", servimos www/style.css
+    
+    
     printf("Obteniendo archivo: %s\n", filepath);
 
     FILE *file = fopen(filepath, "rb");

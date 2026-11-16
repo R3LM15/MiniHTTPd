@@ -70,7 +70,7 @@ int port, sockTCP;
                 }
                     
                     struct epoll_event client_ev = {0};
-                    client_ev.events = EPOLLIN;
+                    client_ev.events = EPOLLIN; // Configurar el evento para lectura y Registrar eventos
                     client_ev.data.fd = client_sock;
                     
                     
@@ -86,7 +86,7 @@ int port, sockTCP;
                 
 
                 if (lectura < 0) {
-                    printf("Error leyendo del cliente");
+                    printf("Error leyendo del cliente\n");
                     epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
                     close(client_sock);
                     continue;
@@ -96,9 +96,9 @@ int port, sockTCP;
                     // El cliente cerró la conexión
                     char ip[INET_ADDRSTRLEN];
                     Obtener_ip(client_sock, ip, sizeof(ip)); //obtiene la ip del socket del cliente antes de cerrarlo
-                    printf("-->  Cliente desconectado: %s\n", ip);
                     epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
                     close(client_sock);
+                    printf("--> Cliente desconectado: %s | Socket: %d\n",ip, client_sock);
                     continue;
                 }
 
@@ -108,7 +108,15 @@ int port, sockTCP;
                     http_request(client_sock, buffer);
                     continue;
                 }
-              
+
+                int resultado = http_request(client_sock, buffer);
+
+                if (resultado == -1) {
+                    printf("--> Cerrando conexión | Socket: %d\n", client_sock);
+                    epoll_ctl(epct, EPOLL_CTL_DEL, client_sock, NULL);
+                    close(client_sock);
+                    continue;
+                }
 
             }
 
@@ -119,3 +127,4 @@ int port, sockTCP;
     }
     
 }
+
