@@ -1,21 +1,3 @@
-minihttpd/
-├── Makefile
-├── README.md
-├── include/
-│ ├── http.h
-│ ├── server.h
-│ ├── mime.h
-│ └── files.h
-├── src/
-│ ├── main.c
-│ ├── server.c
-│ ├── http.c
-│ ├── mime.c
-│ └── files.c
-├── www/
- ├── index.html
- ├── style.css
- └── image.png
 
 
                    CLIENTE (Navegador)

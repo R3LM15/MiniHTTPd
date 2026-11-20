@@ -24,13 +24,14 @@ int http_request(int client_sock, char *buffer) {
     //printf("Datos recibidos: %s\n", buffer);
     if (cc != 3) {
         printf("Error en pedito HTTP \n");
-        close(client_sock);
+        codigos_estado(client_sock,400);
+        return -1;
     }else {
-        printf("===========================\n");
+        printf("======================================\n");
         printf("Método: %s\n", method);   //"GET"
         printf("Path:   %s\n", path);     //"/index.html"
         printf("Versión: %s\n", version); //"HTTP/1.1">
-        printf("===========================\n");
+        printf("======================================\n");
     }
 
     while (1) {
@@ -59,7 +60,7 @@ int http_request(int client_sock, char *buffer) {
     Obtener_ip(client_sock, ip, sizeof(ip)); // Obtener la dirección IP del cliente asociado al socket
     printf("Dirección IP del cliente: %s\n", ip);
 
-    if (strcmp(method, "GET") == 0) {
+    if (strcmp(method, "GET") == 0 && strcmp(version, "HTTP/1.1") == 0) {
             // Procesar la solicitud GET
             int resultado = http_response(client_sock,path); // Llamar a la función http_response para enviar la respuesta al cliente
             if(resultado == -1){
@@ -68,6 +69,7 @@ int http_request(int client_sock, char *buffer) {
 
     } else {
             printf("Conexion Rechaza%s\n", method);
+            codigos_estado(client_sock,405);
             return -1; // Método no soportado, cerrar la conexión
     }
 
@@ -78,22 +80,14 @@ int http_request(int client_sock, char *buffer) {
 
 int http_response(int client_sock, char *path) {
     size_t body_len = 0;
-     
-    unsigned char *body = get_file(path, &body_len); // Obtener el contenido del archivo
+    int codigo_estado = 200;
+    unsigned char *body = get_file(path, &body_len,&codigo_estado); // Obtener el contenido del archivo
     char headers[256];
 
+    
     if (!body) {
         printf("Archivo no encontrado: %s\n", path);
-        // Archivo no encontrado
-        const char *not_found =
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: 22\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "<h1>404 Not Found</h1>";
-
-        send(client_sock, not_found, strlen(not_found), 0);
+        codigos_estado(client_sock,codigo_estado);
         return -1;
     } 
 
@@ -107,14 +101,79 @@ int http_response(int client_sock, char *path) {
         get_mime(path),
         body_len);
 
-   
-
         if (send(client_sock, headers, header_len, 0) != header_len) // Enviar los encabezados de la respuesta al cliente 
         return -1;
 
         if (send(client_sock, body, body_len, 0) != (ssize_t)body_len) // Enviar el cuerpo de la respuesta al cliente
         return -1;
     
+        printf("========== HEADERS ENVIADOS ==========\n");
+        printf("%.*s\n", (int)header_len, headers);
+        printf("============ BODY ENVIADO ============\n");
+        printf("Tamaño del body: %zu bytes\n", body_len);   
+        printf("======================================\n");
+        printf("======================================\n");
     
     return 0;
+}
+
+int codigos_estado(int client_sock, int codigo) {
+
+    const char *respuesta = NULL;
+
+    switch (codigo) {
+        case 400:
+            respuesta =
+                "HTTP/1.1 400 Bad Request\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 22\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<h1>400 Bad Request</h1>\n";
+            break;
+
+        case 403:
+            respuesta =
+                "HTTP/1.1 403 Forbidden\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 23\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<h1>403 Forbidden</h1>\n";
+            break;
+
+        case 404:
+            respuesta =
+                "HTTP/1.1 404 Not Found\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 23\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<h1>404 Not Found</h1>\n";
+            break;
+
+         case 405:
+            respuesta =
+                "HTTP/1.1 405 Method Not Allowed\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 23 \r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<h1>405 Method Not Allowed</h1>\n";
+            break;
+
+        case 500:
+            respuesta =
+                "HTTP/1.1 500 Internal Server Error\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: 35\r\n"
+                "Connection: close\r\n"
+                "\r\n"
+                "<h1>500 Internal Server Error</h1>\n";
+            break;
+
+    }
+
+    send(client_sock, respuesta, strlen(respuesta), 0);
+    return -1;
 }

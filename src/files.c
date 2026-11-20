@@ -8,29 +8,35 @@
 #include "files.h"
 
 
-unsigned char *get_file(const char *path, size_t *file_size) {
+unsigned char *get_file(const char *path, size_t *file_size,int *codigo_estado ) {
     char filepath[PATH_MAX];
     char ruta_base[PATH_MAX];
     char ruta_archivo[PATH_MAX]; 
-    
-    
+    int n;
+
     if (strcmp(path, "/") == 0) {
-        strcpy(filepath, "www/index.html"); // Si piden "/", servimos www/index.html
+        n = snprintf(filepath, sizeof(filepath), "www/index.html"); // Si piden "/", servimos www/index.html con control de overflows
     }else{
-        strcpy(filepath, "www");            
-        strcat(filepath, path);            // www + path 
+        n = snprintf(filepath, sizeof(filepath), "www%s", path);  // www + path 
     }
+
+    if (n < 0 || (size_t)n >= sizeof(filepath)) {
+    *codigo_estado = 400;
+    return NULL;
+}
     printf("Obteniendo archivo: %s\n", filepath);
     
     //obtener la raiz absoluta directorio 
     if(realpath("www", ruta_base) == NULL){
         printf("Error en directorio");
+        *codigo_estado = 404;
         return NULL;
     }  
 
     //obtener la raiz absoluta del archivo
     if (realpath(filepath, ruta_archivo) == NULL) {
         printf("Error al resolver archivo");
+        *codigo_estado = 404;
         return NULL;
     }
 
@@ -39,12 +45,14 @@ unsigned char *get_file(const char *path, size_t *file_size) {
 
     if(strncmp(ruta_base, ruta_archivo, longitud) != 0|| (ruta_archivo[longitud] != '/' && ruta_archivo[longitud] != '\0')){
         printf("No Permitido");
+        *codigo_estado = 403;
         return NULL;
     }
     // abrir el archivo validado
-    FILE *file = fopen(filepath, "rb");
+    FILE *file = fopen(ruta_archivo, "rb");
     if (!file) {
         perror("Error al abrir el archivo");
+        *codigo_estado = 404;
         return NULL;
     }
 
@@ -54,6 +62,7 @@ unsigned char *get_file(const char *path, size_t *file_size) {
     if (size < 0) {
         perror("Error al obtener el tamaño del archivo");
         fclose(file);
+        *codigo_estado = 500;
         return NULL;
     }
     *file_size = (size_t)size;
@@ -64,6 +73,7 @@ unsigned char *get_file(const char *path, size_t *file_size) {
     if (!buffer) {
         perror("Error al asignar memoria");
         fclose(file);
+        *codigo_estado = 500;
         return NULL;
     }
 
@@ -73,6 +83,7 @@ unsigned char *get_file(const char *path, size_t *file_size) {
         perror("Error al leer el archivo");
         free(buffer);
         fclose(file);
+        *codigo_estado = 500;
         return NULL;
     }
 
