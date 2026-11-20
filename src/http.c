@@ -78,6 +78,7 @@ int http_request(int client_sock, char *buffer) {
 
 int http_response(int client_sock, char *path) {
     size_t body_len = 0;
+     
     unsigned char *body = get_file(path, &body_len); // Obtener el contenido del archivo
     char headers[256];
 
