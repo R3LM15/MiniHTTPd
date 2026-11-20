@@ -106,14 +106,6 @@ int http_response(int client_sock, char *path) {
 
         if (send(client_sock, body, body_len, 0) != (ssize_t)body_len) // Enviar el cuerpo de la respuesta al cliente
         return -1;
-    
-        printf("========== HEADERS ENVIADOS ==========\n");
-        printf("%.*s\n", (int)header_len, headers);
-        printf("============ BODY ENVIADO ============\n");
-        printf("Tamaño del body: %zu bytes\n", body_len);   
-        printf("======================================\n");
-        printf("======================================\n");
-    
     return 0;
 }
 
